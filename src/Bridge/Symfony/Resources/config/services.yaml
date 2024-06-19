@@ -1,0 +1,7 @@
+services:
+    api_generator.command.generate:
+        class: MakinaCorpus\ApiGenerator\Command\GenerateCommand
+        arguments: ['@api_generator.source.registry']
+        tags: ['console.command']
+    api_generator.language.typescript:
+        class: MakinaCorpus\ApiGenerator\Output\Language\TypeScriptLanguage

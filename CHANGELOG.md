@@ -1,0 +1,5 @@
+# Changelog
+
+## Next
+
+Project initiated.
