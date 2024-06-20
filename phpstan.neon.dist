@@ -3,6 +3,6 @@ parameters:
     paths:
         - src
         - tests
-    excludePaths:
-        - tests/Mock/SomeEntity.php
+    #excludePaths:
+    #    - tests/Mock/SomeEntity.php
     checkMissingOverrideMethodAttribute: true

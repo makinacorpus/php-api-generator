@@ -30,6 +30,8 @@ class ClassPropertyExtractor implements PropertyExtractor
             }
 
             $foundUsingAttributes = false;
+            $ignored = false;
+
             foreach ($refProp->getAttributes(GeneratedProperty::class) as $refAttr) {
                 $instance = $refAttr->newInstance();
                 \assert($instance instanceof GeneratedProperty);
@@ -39,7 +41,7 @@ class ClassPropertyExtractor implements PropertyExtractor
                     continue;
                 }
 
-                if ($instance->ignore) {
+                if ($ignored = $instance->ignore) {
                     $configuration->logger->notice("'{type}.{property}' is ignored using attribute (ignored)", ['type' => $type->getId(), 'property' => $propertyName]);
                     continue;
                 }
@@ -66,7 +68,7 @@ class ClassPropertyExtractor implements PropertyExtractor
                 }
             }
 
-            if (!$foundUsingAttributes) {
+            if (!$foundUsingAttributes && !$ignored) {
                 yield $this->createPropertyWithReflection($propertyName, $refProp);
             }
         }

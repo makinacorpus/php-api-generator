@@ -85,7 +85,7 @@ abstract class Source
 
             if ($instance->ignore) {
                 $configuration->logger->notice("'{type}' is ignored using attribute (ignored)", ['type' => $className]);
-                continue;
+                return null;
             }
 
             $outputTypeName = $instance->name;
@@ -113,46 +113,9 @@ abstract class Source
         return $type;
     }
 
-    protected function setTypeAliasRegistry(TypeAliasRegistry $typeAliasRegistry): void
-    {
-        if (null !== $this->typeAliasRegistry) {
-            throw new \LogicException("Object was already initializd.");
-        }
-
-        $this->typeAliasRegistry = $typeAliasRegistry;
-    }
-
-    protected function getTypeAliasRegistry(): TypeAliasRegistry
-    {
-        return $this->typeAliasRegistry ??= new TypeAliasRegistry();
-    }
-
-    protected function setPropertyExtractors(array $propertyExtractors): void
-    {
-        if (null !== $this->propertyExtractors) {
-            throw new \LogicException("Object was already initializd.");
-        }
-
-        $this->propertyExtractors = [];
-
-        $found = false;
-        foreach ($propertyExtractors as $propertyExtractor) {
-            if ($propertyExtractor instanceof ClassPropertyExtractor) {
-                $found = true;
-            }
-            $this->propertyExtractors[] = $propertyExtractor;
-        }
-
-        if (!$found) {
-            \array_unshift($this->propertyExtractors, new ClassPropertyExtractor());
-        }
-    }
-
-    protected function getPropertyExtrators(): iterable
-    {
-        return $this->propertyExtractors ??= [new ClassPropertyExtractor()];
-    }
-
+    /**
+     * Find properties in type.
+     */
     protected function findProperties(Type $type, Configuration $configuration): void
     {
         foreach ($this->getPropertyExtrators() as $propertyExtractor) {
@@ -169,5 +132,68 @@ abstract class Source
                 $type->properties[$property->name] = $property;
             }
         }
+    }
+
+    /**
+     * Set type alias registry.
+     */
+    public function setTypeAliasRegistry(TypeAliasRegistry $typeAliasRegistry): void
+    {
+        if (null !== $this->typeAliasRegistry) {
+            throw new \LogicException("Object was already initializd.");
+        }
+
+        $this->typeAliasRegistry = $typeAliasRegistry;
+    }
+
+    /**
+     * Get type alias registry.
+     */
+    protected function getTypeAliasRegistry(): TypeAliasRegistry
+    {
+        return $this->typeAliasRegistry ??= new TypeAliasRegistry();
+    }
+
+    /**
+     * When the source is initialized, this method gives a change to child
+     * implementation to either replace all or add new property extractors.
+     *
+     * @return PropertyExtractor[]
+     */
+    protected function createDefaultPropertyExtractors(): iterable
+    {
+        yield new ClassPropertyExtractor();
+    }
+
+    /**
+     * Set additional property extractors.
+     */
+    protected function setPropertyExtractors(array $propertyExtractors): void
+    {
+        if (null !== $this->propertyExtractors) {
+            throw new \LogicException("Object was already initializd.");
+        }
+
+        $this->propertyExtractors = $propertyExtractors;
+
+        foreach ($this->createDefaultPropertyExtractors() as $propertyExtractor) {
+            $this->propertyExtractors[] = $propertyExtractor;
+        }
+    }
+
+    /**
+     * Get property extractors.
+     */
+    public function getPropertyExtrators(): iterable
+    {
+        if (null === $this->propertyExtractors) {
+            $this->propertyExtractors = [];
+
+            foreach ($this->createDefaultPropertyExtractors() as $propertyExtractor) {
+                $this->propertyExtractors[] = $propertyExtractor;
+            }
+        }
+
+        return $this->propertyExtractors;
     }
 }

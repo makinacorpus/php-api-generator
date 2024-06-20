@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MakinaCorpus\ApiGenerator\Tests\Mock;
 
-class SomeEntity
+class ClassIgnoredHolder
 {
-    protected SomeId $id;
+    protected ClassIgnored $property;
 }

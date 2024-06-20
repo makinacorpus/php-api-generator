@@ -7,7 +7,7 @@ namespace MakinaCorpus\ApiGenerator\Tests\Mock;
 use MakinaCorpus\ApiGenerator\Attribute\GeneratedTypeAlias;
 
 #[GeneratedTypeAlias(name: 'string')]
-class SomeId
+class ClassAliasedPrimitive
 {
-    protected string $realId;
+    protected int $id;
 }

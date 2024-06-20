@@ -37,7 +37,7 @@ class TypeScriptLanguage extends Language
 
         $ret[] = "export interface " . $interfaceName . $extendsString . " {";
 
-        foreach ($output->source?->properties as $property) {
+        foreach ($output->properties as $property) {
             \assert($property instanceof Property);
 
             $propertyName = $property->name;
