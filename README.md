@@ -11,19 +11,8 @@ Main use case is for you to get typings on the frontend side when a Symfony site
 exposes a REST API. It can both use Doctrine ORM and API Platform configurations
 for generating the API interfaces.
 
-The library is standalone and allows to generate any arbitrary class
-representation to another language interface.
-
-# Roadmap
-
-- [ ] feature: plugin system.
-- [x] type aliasing: attribute
-- [ ] type aliasing: attribute groups property
-- [ ] type aliasing: configuration static map
-- [x] type aliasing: well-known types from `ramsey/uuid`, `symfony/uid`, etc...
-- [ ] integration: API Platform.
-- [x] integration: Doctrine.
-- [ ] tests: Unit test group handling.
+While a Symfony bundle is provided, the core library is standalone and allows
+to generate any arbitrary class representation to another language interface.
 
 # Installation
 
@@ -72,20 +61,23 @@ Default configuration will work seamlessly and do the following:
  - Generated code is TypeScript.
  - Target generated code directory is `%kernel.project_dir%/assets/src`.
  - Entities to generated are looked up using either API Platform configuration
-   or Doctrine ORM entities configuration as a fallback.
+   or Doctrine ORM entities configuration as a fallback
+   (_API Platform is not implemented yet_).
  - Considering you are using Symfony defaults, your entities are in the
    `App\Entities\` namespace, then the generated TypeScript code will be placed
    in the `%kernel.project_dir%/assets/src/interfaces/index.ts` file.
 
 All paths, behaviour, language, are configurable.
 
-## Doctrine ORM integration
+## Doctrine ORM integration
 
 Per default, if you do not configure the Symfony bundle, it will generate
 interfaces for all entity classes. Classes that are types for properties
 of those entities, or superclasses will be generated as well.
 
 ## API Platform integration
+
+_API Platform is not implemented yet._
 
 If present, all entities carrying the `#[ApiResource]` attribute will have
 their interfaces generated, no matter those entities are managed using
@@ -107,7 +99,7 @@ When you run the API generator using a specific configuration, you can set
 one or more groups in the configuration, only the rules that matches the
 configuration groups will be taken into account.
 
-## Change the class name
+## Change the class name
 
 You want to give another name than the PHP class name.
 
@@ -127,7 +119,7 @@ class SomeEntity
 }
 ```
 
-## Change the class namespace
+## Change the class namespace
 
 Your namespaces on the generated side doesn't match the PHP namespace
 structure, or simply you want to flatten things.
@@ -169,7 +161,7 @@ class ThisClassWillBeAnyInGeneratedCode
 }
 ```
 
-## Change a property name
+## Change a property name
 
 Your serialization process changes a property name, but this API didn't detect
 the serializer configuration.
@@ -191,7 +183,7 @@ class SomeEntity
 }
 ```
 
-## Change a property type
+## Change a property type
 
 You need to expose a different property type that the one on the PHP class, or
 the type is array or iterable and the value type could not be guessed.
@@ -218,7 +210,7 @@ class SomeEntity
 }
 ```
 
-## Ignore a property
+## Ignore a property
 
 Some of your properties are internal, and you don't want to expose it into
 the interface definition.
@@ -243,7 +235,7 @@ class SomeEntity
 }
 ```
 
-## Type aliasing a class
+## Type aliasing a class
 
 You may want to expose a complex type as another existing one on the target
 language side, for exemple an identifier class to simply `string`.
@@ -317,3 +309,14 @@ $generator->generate(
 ```
 
 Please read the `MakinaCorpus\ApiGenerator\Configuration` code for all existing options.
+
+# Roadmap
+
+- [ ] feature: plugin system.
+- [x] type aliasing: attribute
+- [ ] type aliasing: attribute groups property
+- [ ] type aliasing: configuration static map
+- [x] type aliasing: well-known types from `ramsey/uuid`, `symfony/uid`, etc...
+- [ ] integration: API Platform.
+- [x] integration: Doctrine.
+- [ ] tests: Unit test group handling.
