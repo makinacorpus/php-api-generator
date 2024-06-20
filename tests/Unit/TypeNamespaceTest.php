@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MakinaCorpus\ApiGenerator\Test\Unit;
+namespace MakinaCorpus\ApiGenerator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use MakinaCorpus\ApiGenerator\TypeNamespace;

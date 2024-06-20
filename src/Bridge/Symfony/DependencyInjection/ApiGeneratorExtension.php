@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace MakinaCorpus\ApiGenerator\Bridge\Symfony\DependencyInjection;
 
+use Doctrine\ORM\Tools\Console\EntityManagerProvider;
+use MakinaCorpus\ApiGenerator\Bridge\Doctrine\ORM\DoctrineORMSource;
 use MakinaCorpus\ApiGenerator\Configuration;
 use MakinaCorpus\ApiGenerator\Source\ArraySource;
 use MakinaCorpus\ApiGenerator\Source\SourceConfiguration;
@@ -30,6 +32,7 @@ final class ApiGeneratorExtension extends Extension
 
         $sourceConfigs = [];
         if (isset($config['defaults']['source'])) {
+            // @phpstan-ignore-next-line
             $sourceConfigs['default'] = new Reference($this->registerConfiguration($container, $config['defaults'] ?? []));
         }
         foreach (($config['targets'] ?? []) as $name => $options) {
@@ -87,7 +90,15 @@ final class ApiGeneratorExtension extends Extension
 
         if (\is_string($config)) {
             $arguments = [];
-            throw new \Exception("Automatic sources are not implemented yet.");
+            if ('doctrine' === $config) {
+                if (!DoctrineORMSource::checkRequirements()) {
+                    throw new InvalidArgumentException(\sprintf('"%s": doctrine/orm requirement checks have failed, please ensure at least version 3.0.0 is installed.', $path));
+                }
+                $className = DoctrineORMSource::class;
+                $arguments = [
+                    '$entityManagerProvider' => new Reference('doctrine.orm.command.entity_manager_provider'),
+                ];
+            }
         } else if (\is_array($config)) {
             $className = ArraySource::class;
             $arguments = [
@@ -98,6 +109,7 @@ final class ApiGeneratorExtension extends Extension
         }
 
         $definition = new Definition();
+        // @phpstan-ignore-next-line
         $definition->setClass($className);
         $definition->setArguments($arguments);
         $container->setDefinition($serviceId, $definition);

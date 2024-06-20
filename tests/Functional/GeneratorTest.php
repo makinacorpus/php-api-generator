@@ -2,7 +2,7 @@
 
 declare (strict_types=1);
 
-namespace MakinaCorpus\ApiGenerator\Tests;
+namespace MakinaCorpus\ApiGenerator\Tests\Functional;
 
 use MakinaCorpus\ApiGenerator\Configuration;
 use MakinaCorpus\ApiGenerator\Generator;

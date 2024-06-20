@@ -30,7 +30,7 @@ class TypeScriptLanguage extends Language
 
         // Find parent class if any.
         if ($output->parent) {
-            $extendsString = ' extends ' . $this->exportTypeSignature($context, $output->parent);
+            $extendsString = ' extends ' . $output->parent->name;
         } else {
             $extendsString = '';
         }
@@ -116,33 +116,12 @@ class TypeScriptLanguage extends Language
         $ret = [];
         foreach ($nativeTypes as $name) {
             if ($output = $context->getType($name)) {
-                $ret[] = $this->exportTypeSignature($context, $output);
+                $ret[] = $output->name;
             } else if ($name = $this->resolveInternalTypeAlias($context, $name)) {
                 $ret[] = $name;
             }
         }
 
         return $ret ? \implode('|', $ret) : 'any';
-    }
-
-    private function exportTypeSignature(GeneratorContext $context, Type $output): string
-    {
-        switch ($output->getId()) {
-            case '/iterable':
-                // Untyped lists.
-                return "any[]";
-
-            /*
-            case '/DateTime':
-            case '/DateTimeImmutable':
-            case '/DateTimeInterface':
-                $file->addDependency(new Type(name: 'Date'));
-
-                return "DateStringISO8601";
-             */
-
-            default:
-                return $output->name;
-        }
     }
 }

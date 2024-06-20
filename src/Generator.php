@@ -109,7 +109,9 @@ class Generator
     ): Property {
         $types = [];
         foreach ($property->types as $nativeType) {
-            if ($context->hasType($nativeType)) {
+            if ($alias = $source->getTypeAlias($context->configuration, $nativeType)) {
+                $types[] = $alias;
+            } else if ($context->hasType($nativeType)) {
                 $types[] = $nativeType;
             // @todo add if propagateTypes
             } else if ($type = $source->resolveType($context->configuration, $nativeType)) {

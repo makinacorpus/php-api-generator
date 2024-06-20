@@ -4,21 +4,20 @@ declare(strict_types=1);
 
 namespace MakinaCorpus\ApiGenerator\Source;
 
+use MakinaCorpus\ApiGenerator\Attribute\GeneratedType;
 use MakinaCorpus\ApiGenerator\Configuration;
 use MakinaCorpus\ApiGenerator\Property;
 use MakinaCorpus\ApiGenerator\Type;
 use MakinaCorpus\ApiGenerator\TypeNamespace;
-use MakinaCorpus\ApiGenerator\Attribute\GeneratedType;
 
 /**
  * Finds classes to generate.
  */
 abstract class Source
 {
-    public function __construct(
-        /** @var PropertyExtractor[] */
-        private null|iterable $propertyExtractors = null,
-    ) {}
+    private null|TypeAliasRegistry $typeAliasRegistry = null;
+    /** @var PropertyExtractor[] */
+    private null|array $propertyExtractors = null;
 
     /**
      * Find generable classes.
@@ -35,9 +34,22 @@ abstract class Source
     }
 
     /**
+     * Get arbitrary alias for type.
+     *
+     * This returns a native name string.
+     */
+    public function getTypeAlias(Configuration $configuration, string $nativeName): ?string
+    {
+        return $this->getTypeAliasRegistry()->getTypeAlias($configuration, $nativeName);
+    }
+
+    /**
      * Resolve a single type.
      */
-    public abstract function resolveType(Configuration $configuration, string $nativeType): ?Type;
+    public function resolveType(Configuration $configuration, string $nativeType): ?Type
+    {
+        return $this->createTypeUsingReflection($nativeType, $configuration);
+    }
 
     /**
      * Find all types to export.
@@ -99,6 +111,41 @@ abstract class Source
         $this->findProperties($type, $configuration);
 
         return $type;
+    }
+
+    protected function setTypeAliasRegistry(TypeAliasRegistry $typeAliasRegistry): void
+    {
+        if (null !== $this->typeAliasRegistry) {
+            throw new \LogicException("Object was already initializd.");
+        }
+
+        $this->typeAliasRegistry = $typeAliasRegistry;
+    }
+
+    protected function getTypeAliasRegistry(): TypeAliasRegistry
+    {
+        return $this->typeAliasRegistry ??= new TypeAliasRegistry();
+    }
+
+    protected function setPropertyExtractors(array $propertyExtractors): void
+    {
+        if (null !== $this->propertyExtractors) {
+            throw new \LogicException("Object was already initializd.");
+        }
+
+        $this->propertyExtractors = [];
+
+        $found = false;
+        foreach ($propertyExtractors as $propertyExtractor) {
+            if ($propertyExtractor instanceof ClassPropertyExtractor) {
+                $found = true;
+            }
+            $this->propertyExtractors[] = $propertyExtractor;
+        }
+
+        if (!$found) {
+            \array_unshift($this->propertyExtractors, new ClassPropertyExtractor());
+        }
     }
 
     protected function getPropertyExtrators(): iterable

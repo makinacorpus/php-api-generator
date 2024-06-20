@@ -7,6 +7,17 @@ Only usable use case is generating PHP classes to TypeScript interfaces for now.
 For example, it can generates REST API frontend TypeScript interfaces from your
 PHP classes for using those into your application frontend source code.
 
+# Roadmap
+
+- [ ] feature: plugin system.
+- [x] type aliasing: attribute
+- [ ] type aliasing: attribute groups property
+- [ ] type aliasing: configuration static map
+- [x] type aliasing: well-known types from `ramsey/uuid`, `symfony/uid`, etc...
+- [ ] integration: API Platform.
+- [x] integration: Doctrine.
+- [ ] tests: Unit test group handling.
+
 # Installation
 
 Install it using composer:
@@ -34,7 +45,7 @@ Configure it using `config/packages/api_generator.yaml`:
 api_generator:
     defaults:
         namespace_prefix_input: App\Entity
-        namespace_prefix_output: interfaces/index
+        namespace_prefix_output: interfaces
         directory: "%kernel.project_dir%/assets/src"
         # Multiple configurations are possible, groups allow you to target
         # how to generate different interfaces for each PHP class in each
