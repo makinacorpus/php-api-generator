@@ -1,6 +1,6 @@
 {
     "name": "makinacorpus/api-generator",
-    "description": "Document writer and manager API.",
+    "description": "Generates client side API interface (TypeScript for example) code from your PHP classes.",
     "type": "library",
     "license": "MIT",
     "authors": [
