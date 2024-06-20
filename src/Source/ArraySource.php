@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MakinaCorpus\ApiGenerator\Source;
 
 use MakinaCorpus\ApiGenerator\Configuration;
+use MakinaCorpus\ApiGenerator\Type;
 
 class ArraySource extends Source
 {
@@ -13,10 +14,14 @@ class ArraySource extends Source
     ) {}
 
     #[\Override]
-    public function findTypes(Configuration $configuration): iterable
+    public function resolveType(Configuration $configuration, string $nativeType): ?Type
     {
-        foreach ($this->classNames as $className) {
-            yield $this->createTypeUsingReflection($className, $configuration);
-        }
+        return $this->createTypeUsingReflection($nativeType, $configuration);
+    }
+
+    #[\Override]
+    protected function getTypeList(Configuration $configuration): iterable
+    {
+        return $this->classNames;
     }
 }

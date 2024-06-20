@@ -72,12 +72,12 @@ final class GeneratorContext
         return $this->files;
     }
 
-    public function getFile(string $name, string $namespace): OutputFile
+    public function getFile(string $name, TypeNamespace $namespace): OutputFile
     {
         if ($found = $this->files[$name] ?? null) {
             \assert($found instanceof OutputFile);
 
-            if ($found->namespace !== $namespace) {
+            if (!$found->namespace->equals($namespace)) {
                 throw new \InvalidArgumentException(\sprintf("Namespace mismatch, file contains '%s', given '%s'", $found->namespace, $namespace));
             }
 

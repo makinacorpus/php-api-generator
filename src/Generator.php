@@ -29,7 +29,9 @@ class Generator
         // Filter classes and keep only those we can generate.
         // Also resolves the parenting tree of each class.
         foreach ($source->findTypes($context->configuration) as $input) {
-            $this->resolveType($context, $language, $input);
+            \assert($input instanceof Type);
+
+            $this->resolveType($source, $language, $context, $input);
         }
 
         // Once all types are resolved, resolve properties.
@@ -38,44 +40,23 @@ class Generator
 
             // Resolve output file for target type.
             $targetFile = \rtrim($directory, '/') . '/' . \ltrim($language->resolveTargetFile($context, $output), '/');
-            $outputFile = $context->getFile($targetFile, (string) $output->namespace);
+            $outputFile = $context->getFile($targetFile, $output->namespace);
 
             // Resolve parenting dependency.
-            if ($output->parent && $output->parent->namespace !== $output->parent) {
+            if ($output->parent) {
                 $outputFile->addDependency($output->parent);
             }
 
             // Once that done, resolve all properties and dependencies.
-            if (!$output->properties && $output->source) {
-                // @phpstan-ignore-next-line
-                foreach ($output->source?->properties as $property) {
-                    // @todo Clean this up.
-                    $types = [];
-                    foreach ($property->types as $nativeType) {
-                        // @todo does not handle type name collision when
-                        //    they come from different namespaces.
-                        if ($context->hasType($nativeType)) {
-                            $propertyType = $context->getType($nativeType);
-                            $types[] = $propertyType->name;
-                            if ($output->namespace && $propertyType->namespace && !$propertyType->namespace->equals($output->namespace)) {
-                                $outputFile->addDependency($propertyType);
-                            }
-                        } else {
-                            // @todo warning could not derivate type
-                        }
+            foreach ($output->properties as $property) {
+                foreach ($property->types as $typeId) {
+                    if ($context->hasType($typeId)) {
+                        $outputFile->addDependency($context->getType($typeId));
                     }
-
-                    $output->properties[] = new Property(
-                        name: $property->name,
-                        types: $types, // Note: can be empty.
-                        isSumType: $property->isSumType,
-                        nullable: $property->nullable,
-                        collection: $property->collection,
-                    );
                 }
-
-                $outputFile->addCodeBlock($language->generateTypeCode($context, $output));
             }
+
+            $outputFile->addCodeBlock($language->generateTypeCode($context, $output));
         }
 
         // Now generate all files.
@@ -84,23 +65,23 @@ class Generator
 
             $targetFile = $outputFile->name;
             if (\file_exists($targetFile)) {
-                $context->configuration->logger->warning(\sprintf('File overwrite: %s)', $targetFile));
+                $context->configuration->logger->warning(\sprintf("File overwrite: '%s'", $targetFile));
                 if (!\unlink($targetFile)) {
                     throw new \InvalidArgumentException(\sprintf("Could not delete file: %s", $targetFile));
                 }
             } else {
                 $targetDirectory = \dirname($targetFile);
                 if (!\is_dir($targetDirectory)) {
-                    $context->configuration->logger->notice(\sprintf('Directory creation: %s)', $targetDirectory));
+                    $context->configuration->logger->notice(\sprintf("Directory creation: '%s'", $targetDirectory));
                     if (!\mkdir($targetDirectory, 0755, true)) {
-                        throw new \InvalidArgumentException(\sprintf("Could not create directory: %s", $targetDirectory));
+                        throw new \InvalidArgumentException(\sprintf("Could not create directory: '%s'", $targetDirectory));
                     }
                 }
-                $context->configuration->logger->notice(\sprintf('File creation: %s)', $targetFile));
+                $context->configuration->logger->notice(\sprintf("File creation: '%s'", $targetFile));
             }
 
             if (!$handle = \fopen($targetFile, "w+")) {
-                throw new \InvalidArgumentException(\sprintf("Could not create file: %s", $targetFile));
+                throw new \InvalidArgumentException(\sprintf("Could not create file: '%s'", $targetFile));
             }
             try {
                 \fwrite($handle, $language->generateFileHeader($context, $outputFile) . "\n");
@@ -118,11 +99,44 @@ class Generator
     }
 
     /**
+     * Property recursion.
+     */
+    private function resolveProperty(
+        Source $source,
+        Language $language,
+        GeneratorContext $context,
+        Property $property,
+    ): Property {
+        $types = [];
+        foreach ($property->types as $nativeType) {
+            if ($context->hasType($nativeType)) {
+                $types[] = $nativeType;
+            // @todo add if propagateTypes
+            } else if ($type = $source->resolveType($context->configuration, $nativeType)) {
+                $this->resolveType($source, $language, $context, $type);
+                $types[] = $type->getId();
+            } else {
+                // @todo what about primitive types?
+                $types[] = $nativeType;
+            }
+        }
+
+        return new Property(
+            name: $property->name,
+            types: $types, // Note: can be empty.
+            isSumType: $property->isSumType,
+            nullable: $property->nullable,
+            collection: $property->collection,
+        );
+    }
+
+    /**
      * Type recursion (creates output types for all parents).
      */
     private function resolveType(
-        GeneratorContext $context,
+        Source $source,
         Language $language,
+        GeneratorContext $context,
         Type $input,
     ): ?Type {
         /*
@@ -148,7 +162,11 @@ class Generator
         $context->addType($output);
 
         if ($input->parent) {
-            $output->parent = $this->resolveType($context, $language, $input->parent);
+            $output->parent = $this->resolveType($source, $language, $context, $input->parent);
+        }
+
+        foreach ($input->properties as $property) {
+            $output->properties[] = $this->resolveProperty($source, $language, $context, $property);
         }
 
         return $output;

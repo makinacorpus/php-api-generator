@@ -31,6 +31,22 @@ return [
 Configure it using `config/packages/api_generator.yaml`:
 
 ```yaml
+api_generator:
+    defaults:
+        namespace_prefix_input: App\Entity
+        namespace_prefix_output: interfaces/index
+        directory: "%kernel.project_dir%/assets/src"
+        # Multiple configurations are possible, groups allow you to target
+        # how to generate different interfaces for each PHP class in each
+        # group configuration.
+        groups: []
+        # If "source" is an array, entities to generate will not be looked
+        # up automatically, and you must specify an array of PHP classes
+        # instead.
+        source:
+            - App\Entity\Article
+            - App\Entity\BlogPost
+            - App\Entity\USer
 ```
 
 Default configuration will work seamlessly and do the following:

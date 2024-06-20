@@ -16,7 +16,7 @@ class TypeScriptLanguage extends Language
     public function resolveTargetFile(GeneratorContext $context, Type $output): string
     {
         if (!$output->namespace || $output->namespace->isEmpty()) {
-            return 'index.ts'; // @todo could squash files
+            return 'index.ts'; // @todo Warning, files could be overwritten.
         }
         return ((string) $output->namespace) . '.ts';
     }
@@ -61,23 +61,31 @@ class TypeScriptLanguage extends Language
     #[\Override]
     public function generateFileHeader(GeneratorContext $context, OutputFile $outputFile): string
     {
-        $ret = [];
-
         $importGroups = [];
         foreach ($outputFile->getAllDependencies() as $dependency) {
-            if ($dependency->namespace) {
-                $importGroups[(string) $dependency->namespace][] = $dependency->name;
+            if (!$dependency->namespace?->isEmpty()) {
+                continue;
             }
+            // TypeScript project does relative imports ("../foo/bar.ts")
+            // a JavaScript convention exists where "@/" is the project root
+            // but we have no insurance this exists. Since we have a root
+            // folder we can compute relative imports for pretty much
+            // everything. This is the only way it'll work gracefully in
+            // all projects.
+            $relative = $outputFile->namespace->relative($dependency->namespace, '.', '..');
+            $importGroups[(string) $relative][] = $dependency->name;
         }
 
-        \ksort($importGroups);
-        foreach ($importGroups as $namespace => $nameList) {
-            \sort($nameList);
-            // @todo identify external dependencies
-            $ret[] = "import { " . \implode(', ', $nameList) . " } from './" . $namespace . "';";
+        if ($importGroups) {
+            $ret = [];
+            \ksort($importGroups);
+            foreach ($importGroups as $namespace => $nameList) {
+                \sort($nameList);
+                $ret[] = "import { " . \implode(', ', $nameList) . " } from '" . $namespace . "';";
+            }
+            return \implode("\n", $ret);
         }
-
-        return \implode("\n", $ret);
+        return '';
     }
 
     private function resolveInternalTypeAlias(GeneratorContext $context, string $name): ?string

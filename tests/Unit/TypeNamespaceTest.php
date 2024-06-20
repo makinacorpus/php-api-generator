@@ -9,6 +9,38 @@ use MakinaCorpus\ApiGenerator\TypeNamespace;
 
 final class TypeNamespaceTest extends TestCase
 {
+    public function testRelativeThisSmaller(): void
+    {
+        $namespace = new TypeNamespace('foo/bar', '/');
+        $other = new TypeNamespace('foo\\bar\\fizz\\buzz', '\\');
+
+        self::assertSame('./fizz/buzz', (string) $namespace->relative($other));
+    }
+
+    public function testRelativeThisSmallerAndDifferent(): void
+    {
+        $namespace = new TypeNamespace('foo/bar', '/');
+        $other = new TypeNamespace('foo\\fizz\\buzz', '\\');
+
+        self::assertSame('../fizz/buzz', (string) $namespace->relative($other));
+    }
+
+    public function testRelativeOtherSmaller(): void
+    {
+        $namespace = new TypeNamespace('foo/bar/fizz/buzz', '/');
+        $other = new TypeNamespace('foo\\bar', '\\');
+
+        self::assertSame('../..', (string) $namespace->relative($other));
+    }
+
+    public function testRelativeOtherSmallerAndDifferent(): void
+    {
+        $namespace = new TypeNamespace('foo/fizz/buzz', '/');
+        $other = new TypeNamespace('foo\\bar', '\\');
+
+        self::assertSame('../../bar', (string) $namespace->relative($other));
+    }
+
     public function testConcatSelf(): void
     {
         $namespace = new TypeNamespace('foo/bar', '/');

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MakinaCorpus\ApiGenerator\Output;
 
 use MakinaCorpus\ApiGenerator\Type;
+use MakinaCorpus\ApiGenerator\TypeNamespace;
 
 final class OutputFile
 {
@@ -15,7 +16,7 @@ final class OutputFile
 
     public function __construct(
         public readonly string $name,
-        public readonly string $namespace,
+        public readonly TypeNamespace $namespace,
     ) {}
 
     /** @return Type[] */
@@ -32,6 +33,10 @@ final class OutputFile
 
     public function addDependency(Type $dependency): void
     {
+        if ($dependency->namespace->isEmpty() || $dependency->namespace->equals($this->namespace)) {
+            return;
+        }
+
         foreach ($this->dependencies as $candidate) {
             if ($dependency->equals($candidate)) {
                 return;

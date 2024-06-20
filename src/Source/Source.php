@@ -25,14 +25,38 @@ abstract class Source
      *
      * @return Type[]
      */
-    public abstract function findTypes(Configuration $configuration): iterable;
+    public function findTypes(Configuration $configuration): iterable
+    {
+        foreach ($this->getTypeList($configuration) as $nativeType) {
+            if ($type = $this->resolveType($configuration, $nativeType)) {
+                yield $type;
+            }
+        }
+    }
+
+    /**
+     * Resolve a single type.
+     */
+    public abstract function resolveType(Configuration $configuration, string $nativeType): ?Type;
+
+    /**
+     * Find all types to export.
+     *
+     * @return string[]
+     */
+    protected abstract function getTypeList(Configuration $configuration): iterable;
 
     /**
      * From PHP class name, get source type instance.
      */
-    protected function createTypeUsingReflection(string $className, Configuration $configuration): Type
+    protected function createTypeUsingReflection(string $className, Configuration $configuration): ?Type
     {
         $className = \trim($className, '\\');
+
+        if (!\class_exists($className)) {
+            return null;
+        }
+
         $outputTypeName = null;
         $outputNamespace = null;
         $refClass = new \ReflectionClass($className);

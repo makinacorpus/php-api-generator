@@ -20,6 +20,8 @@ final class Configuration implements LoggerAwareInterface
         null|string|TypeNamespace $namespaceInputPrefix = 'App',
         /** Prefix that will be added to output namespaces. */
         null|string|TypeNamespace $namespaceOutputPrefix = 'api',
+        /** Include propagated types from properties or inheritance. */
+        public readonly bool $propagateTypes = false,
         /** Ignore properties and classes with the @internal annotation. */
         public readonly bool $ignoreInternal = false,
         /** Logger for outputing debug, notice and warning messages. */
