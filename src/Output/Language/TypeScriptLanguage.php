@@ -63,7 +63,7 @@ class TypeScriptLanguage extends Language
     {
         $importGroups = [];
         foreach ($outputFile->getAllDependencies() as $dependency) {
-            if (!$dependency->namespace?->isEmpty()) {
+            if (!$dependency->namespace || $dependency->namespace->isEmpty()) {
                 continue;
             }
             // TypeScript project does relative imports ("../foo/bar.ts")

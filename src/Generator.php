@@ -34,7 +34,8 @@ class Generator
             $this->resolveType($source, $language, $context, $input);
         }
 
-        // Once all types are resolved, resolve properties.
+        // Once all types are resolved, create output file and resolve
+        // dependencies, then generate code.
         foreach ($context->getAllTypes() as $output) {
             \assert($output instanceof Type);
 
@@ -42,12 +43,9 @@ class Generator
             $targetFile = \rtrim($directory, '/') . '/' . \ltrim($language->resolveTargetFile($context, $output), '/');
             $outputFile = $context->getFile($targetFile, $output->namespace);
 
-            // Resolve parenting dependency.
             if ($output->parent) {
                 $outputFile->addDependency($output->parent);
             }
-
-            // Once that done, resolve all properties and dependencies.
             foreach ($output->properties as $property) {
                 foreach ($property->types as $typeId) {
                     if ($context->hasType($typeId)) {
@@ -84,9 +82,12 @@ class Generator
                 throw new \InvalidArgumentException(\sprintf("Could not create file: '%s'", $targetFile));
             }
             try {
+                // Header is written after all other pieces of code has been
+                // resolved, this allows the code generation from the language
+                // to arbitrarily add new dependencies along the way while
+                // generating code.
                 \fwrite($handle, $language->generateFileHeader($context, $outputFile) . "\n");
 
-                // Maintenant on pose tous les blocks de code.
                 foreach ($outputFile->getAllCodeBlocks() as $codeBlock) {
                     \fwrite($handle, "\n");
                     \fwrite($handle, $codeBlock);
@@ -96,45 +97,6 @@ class Generator
                 @\fclose($handle);
             }
         }
-    }
-
-    /**
-     * Property recursion.
-     */
-    private function resolveProperty(
-        Source $source,
-        Language $language,
-        GeneratorContext $context,
-        Property $property,
-    ): Property {
-        $types = [];
-        foreach ($property->types as $nativeType) {
-            if ($alias = $source->getTypeAlias($context->configuration, $nativeType)) {
-                if ($type = $source->resolveType($context->configuration, $alias)) {
-                    $this->resolveType($source, $language, $context, $type);
-                    $types[] = $type->getId();
-                } else {
-                    $types[] = $alias;
-                }
-            } else if ($context->hasType($nativeType)) {
-                $types[] = $nativeType;
-            // @todo add if propagateTypes
-            } else if ($type = $source->resolveType($context->configuration, $nativeType)) {
-                $this->resolveType($source, $language, $context, $type);
-                $types[] = $type->getId();
-            } else {
-                // @todo what about primitive types?
-                $types[] = $nativeType;
-            }
-        }
-
-        return new Property(
-            name: $property->name,
-            types: $types, // Note: can be empty.
-            isSumType: $property->isSumType,
-            nullable: $property->nullable,
-            collection: $property->collection,
-        );
     }
 
     /**
@@ -173,9 +135,53 @@ class Generator
         }
 
         foreach ($input->properties as $property) {
-            $output->properties[] = $this->resolveProperty($source, $language, $context, $property);
+            $output->properties[$property->name] = new Property(
+                name: $property->name,
+                types: \array_unique(\array_filter(\array_map(fn ($type) => $this->resolvePropertyType($source, $language, $context, $type), $property->types))),
+                isSumType: $property->isSumType,
+                nullable: $property->nullable,
+                collection: $property->collection,
+            );
         }
 
         return $output;
+    }
+
+    /**
+     * Calls resolveType() but resolve from source first.
+     */
+    private function resolveTypeFromSource(
+        Source $source,
+        Language $language,
+        GeneratorContext $context,
+        string $nativeType,
+    ): ?Type {
+        if ($context->hasType($nativeType)) {
+            return $context->getType($nativeType);
+        }
+
+        $input = $source->resolveType($context->configuration, $nativeType);
+
+        return $input ? $this->resolveType($source, $language, $context, $input) : null;
+    }
+
+    /**
+     * Property recursion.
+     */
+    private function resolvePropertyType(
+        Source $source,
+        Language $language,
+        GeneratorContext $context,
+        string $nativeType,
+    ): string {
+        $alias = $source->getTypeAlias($context->configuration, $nativeType);
+
+        if ($alias) {
+            $output = $this->resolveTypeFromSource($source, $language, $context, $alias);
+
+            return $output?->getId() ?? $alias;
+        }
+
+        return $this->resolveTypeFromSource($source, $language, $context, $nativeType)?->getId() ?? $nativeType;
     }
 }
