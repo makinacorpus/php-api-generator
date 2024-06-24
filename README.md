@@ -50,7 +50,7 @@ api_generator:
         # If "source" is an array, entities to generate will not be looked
         # up automatically, and you must specify an array of PHP classes
         # instead.
-        source:
+        sources:
             - App\Entity\Article
             - App\Entity\BlogPost
             - App\Entity\USer

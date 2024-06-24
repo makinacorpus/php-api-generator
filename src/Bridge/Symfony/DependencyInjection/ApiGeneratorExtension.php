@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace MakinaCorpus\ApiGenerator\Bridge\Symfony\DependencyInjection;
 
-use Doctrine\ORM\Tools\Console\EntityManagerProvider;
 use MakinaCorpus\ApiGenerator\Bridge\Doctrine\ORM\DoctrineORMSource;
 use MakinaCorpus\ApiGenerator\Configuration;
 use MakinaCorpus\ApiGenerator\Source\ArraySource;
+use MakinaCorpus\ApiGenerator\Source\FinderSource;
+use MakinaCorpus\ApiGenerator\Source\SourceChain;
 use MakinaCorpus\ApiGenerator\Source\SourceConfiguration;
 use MakinaCorpus\ApiGenerator\Source\SourceConfigurationRegistry;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -31,7 +32,7 @@ final class ApiGeneratorExtension extends Extension
         $loader->load('services.yaml');
 
         $sourceConfigs = [];
-        if (isset($config['defaults']['source'])) {
+        if (isset($config['defaults']['sources'])) {
             // @phpstan-ignore-next-line
             $sourceConfigs['default'] = new Reference($this->registerConfiguration($container, $config['defaults'] ?? []));
         }
@@ -76,21 +77,56 @@ final class ApiGeneratorExtension extends Extension
             '$configuration' => new Reference($serviceId . '.configuration'),
             '$directory' => $directory,
             '$language' => new Reference($this->getLanguageServiceId($container, $config['language'] ?? 'typescript')),
-            '$source' => new Reference($this->registerSource($container, $config['source'], $name)),
+            '$source' => new Reference($this->registerSources($container, $config['sources'] ?? null, $name)),
         ]);
         $container->setDefinition($serviceId, $definition);
 
         return $serviceId;
     }
 
-    private function registerSource(ContainerBuilder $container, mixed $config, string $name): string
+    private function registerSources(ContainerBuilder $container, ?array $config, ?string $name): string
     {
         $path = $name ? 'api_generator.targets.' . $name . '.source' : 'api_generator.defaults.source';
         $serviceId = 'api_generator.source' . ($name ? '.' . $name : '') . '.source';
 
-        if (\is_string($config)) {
-            $arguments = [];
-            if ('doctrine' === $config) {
+        // Attempt automatic detection.
+        if (empty($config)) {
+            if (DoctrineORMSource::checkRequirements()) {
+                $config = [['type' => 'doctrine']];
+            } else {
+                throw new InvalidArgumentException(\sprintf("'%s': could not determine a default source.", $path));
+            }
+        }
+
+        $services = [];
+        foreach ($config as $index => $childConfig) {
+            $services[] = new Reference($this->registerSource($container, $childConfig, $path, $serviceId, $index));
+        }
+
+        if (1 === \count($services)) {
+            return (string) $services[0]->__toString();
+        }
+
+        $definition = new Definition();
+        $definition->setClass(SourceChain::class);
+        $definition->setArguments([$services]);
+        $container->setDefinition($serviceId, $definition);
+
+        return $serviceId;
+    }
+
+    private function registerSource(ContainerBuilder $container, mixed $config, string $path, string $parentId, int $index): string
+    {
+        $path = $path . '.' . $index;
+        $serviceId = $parentId . '.' . $index;
+
+        if (!isset($config['type'])) {
+            throw new InvalidArgumentException(\sprintf("'%s': 'type' is missing.", $path));
+        }
+
+        $arguments = [];
+        switch ($config['type']) {
+            case 'doctrine':
                 if (!DoctrineORMSource::checkRequirements()) {
                     throw new InvalidArgumentException(\sprintf('"%s": doctrine/orm requirement checks have failed, please ensure at least version 3.0.0 is installed.', $path));
                 }
@@ -98,14 +134,28 @@ final class ApiGeneratorExtension extends Extension
                 $arguments = [
                     '$entityManagerProvider' => new Reference('doctrine.orm.command.entity_manager_provider'),
                 ];
-            }
-        } else if (\is_array($config)) {
-            $className = ArraySource::class;
-            $arguments = [
-                '$classNames' => \array_values(\array_unique($config)),
-            ];
-        } else {
-            throw new InvalidArgumentException(\sprintf('"%s": expected "string" or "array", got "%s".', $path, \get_debug_type($config)));
+                break;
+
+            case 'array':
+                if (empty($config['classes'])) {
+                    throw new InvalidArgumentException(\sprintf('"%s": "classes" option is missing.', $path));
+                }
+
+                $className = ArraySource::class;
+                $arguments = [
+                    '$classNames' => \array_values(\array_unique($config)),
+                ];
+                break;
+
+            case 'finder':
+                if (empty($config['directory'])) {
+                    throw new InvalidArgumentException(\sprintf('"%s": "directory" option is missing.', $path));
+                }
+
+                $className = FinderSource::class;
+                $arguments = [
+                    '$directory' => $config['directory'],
+                ];
         }
 
         $definition = new Definition();

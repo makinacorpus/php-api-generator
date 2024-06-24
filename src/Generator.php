@@ -174,7 +174,7 @@ class Generator
         GeneratorContext $context,
         string $nativeType,
     ): string {
-        $alias = $source->getTypeAlias($context->configuration, $nativeType);
+        $alias = $context->getTypeAlias($nativeType);
 
         if ($alias) {
             $output = $this->resolveTypeFromSource($source, $language, $context, $alias);

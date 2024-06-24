@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MakinaCorpus\ApiGenerator;
 
 use MakinaCorpus\ApiGenerator\Output\OutputFile;
+use MakinaCorpus\ApiGenerator\Source\TypeAliasRegistry;
 
 /**
  * @todo
@@ -20,7 +21,13 @@ final class GeneratorContext
 
     public function __construct(
         public readonly Configuration $configuration = new Configuration(),
+        private readonly TypeAliasRegistry $typeAliasRegistry = new TypeAliasRegistry(),
     ) {}
+
+    public function getTypeAlias(string $nativeName): ?string
+    {
+        return $this->typeAliasRegistry->getTypeAlias($this->configuration, $nativeName);
+    }
 
     public function resolveNamespace(TypeNamespace $inputNamespace, ?string $separator = null): TypeNamespace
     {

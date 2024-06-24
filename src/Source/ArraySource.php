@@ -6,7 +6,7 @@ namespace MakinaCorpus\ApiGenerator\Source;
 
 use MakinaCorpus\ApiGenerator\Configuration;
 
-class ArraySource extends Source
+class ArraySource extends AbstractSource
 {
     public function __construct(
         private readonly array $classNames,

@@ -7,9 +7,9 @@ namespace MakinaCorpus\ApiGenerator\Bridge\Doctrine\ORM;
 use Composer\InstalledVersions;
 use Doctrine\ORM\Tools\Console\EntityManagerProvider;
 use MakinaCorpus\ApiGenerator\Configuration;
-use MakinaCorpus\ApiGenerator\Source\Source;
+use MakinaCorpus\ApiGenerator\Source\AbstractSource;
 
-class DoctrineORMSource extends Source
+class DoctrineORMSource extends AbstractSource
 {
     public static function checkRequirements(): bool
     {
