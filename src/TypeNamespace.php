@@ -8,11 +8,27 @@ final class TypeNamespace
 {
     private readonly array $pieces;
     private readonly string $separator;
+    private readonly int $size;
 
     public function __construct(string|array $name, string $separator)
     {
-        $this->pieces = \array_filter(\is_array($name) ? \array_values($name) : \explode($separator, \trim($name, $separator)));
+        if (\is_string($name)) {
+            $this->pieces = \explode($separator, \trim($name));
+        } else {
+            // User input may have been created with another language separator
+            // that is not the output one, this fixes that.
+            $pieces = [];
+            foreach ($name as $segment) {
+                foreach (\explode($separator, $segment) as $piece) {
+                    if ($piece) {
+                        $pieces[] = $piece;
+                    }
+                }
+            }
+            $this->pieces = $pieces;
+        }
         $this->separator = $separator;
+        $this->size = \count($this->pieces);
     }
 
     /**
@@ -21,6 +37,65 @@ final class TypeNamespace
     public static function empty(string $separator = '/'): self
     {
         return new self([], $separator);
+    }
+
+    /**
+     * Get namespace size.
+     */
+    public function getSize(): int
+    {
+        return $this->size;
+    }
+
+    /**
+     * Other starts with.
+     */
+    public function startsWith(string|self $other): bool
+    {
+        $other = \is_string($other) ? new self($other, $this->separator) : $other;
+
+        if ($this->size < $other->size) {
+            return false;
+        }
+        for ($i = 0; $i < $other->size; ++$i) {
+            if ($this->pieces[$i] !== $other->pieces[$i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Get segment at.
+     */
+    public function getSegmentAt(int $index): string
+    {
+        if (empty($this->pieces) || $index < 0 || \count($this->pieces) < $index) {
+            throw new \OutOfBoundsException();
+        }
+        return $this->pieces[$index];
+    }
+
+    /**
+     * Get last segment at.
+     */
+    public function getLastSegment(): string
+    {
+        if (empty($this->pieces)) {
+            throw new \OutOfBoundsException();
+        }
+        return $this->pieces[\count($this->pieces) - 1];
+    }
+
+    /**
+     * Remove trailing elements.
+     */
+    public function pop(int $howMany = 1): self
+    {
+        if (\count($this->pieces) < $howMany) {
+            throw new \OutOfBoundsException("Cant pop more elements than namespace size.");
+        }
+        return new self(\array_slice($this->pieces, 0, 0 - $howMany), $this->separator);
     }
 
     /**

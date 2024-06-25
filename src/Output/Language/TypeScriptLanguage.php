@@ -7,6 +7,7 @@ namespace MakinaCorpus\ApiGenerator\Output\Language;
 use MakinaCorpus\ApiGenerator\GeneratorContext;
 use MakinaCorpus\ApiGenerator\Property;
 use MakinaCorpus\ApiGenerator\Type;
+use MakinaCorpus\ApiGenerator\TypeNamespace;
 use MakinaCorpus\ApiGenerator\Output\Language;
 use MakinaCorpus\ApiGenerator\Output\OutputFile;
 
@@ -66,14 +67,7 @@ class TypeScriptLanguage extends Language
             if (!$dependency->namespace || $dependency->namespace->isEmpty()) {
                 continue;
             }
-            // TypeScript project does relative imports ("../foo/bar.ts")
-            // a JavaScript convention exists where "@/" is the project root
-            // but we have no insurance this exists. Since we have a root
-            // folder we can compute relative imports for pretty much
-            // everything. This is the only way it'll work gracefully in
-            // all projects.
-            $relative = $outputFile->namespace->relative($dependency->namespace, '.', '..');
-            $importGroups[(string) $relative][] = $dependency->name;
+            $importGroups[(string) $this->generateRelativeNamespace($outputFile->namespace, $dependency->namespace)][] = $dependency->name;
         }
 
         if ($importGroups) {
@@ -86,6 +80,27 @@ class TypeScriptLanguage extends Language
             return \implode("\n", $ret);
         }
         return '';
+    }
+
+    private function generateRelativeNamespace(TypeNamespace $file, TypeNamespace $reference): TypeNamespace
+    {
+        // Because the file is generated as such: "foo/bar.ts" we must compute
+        // compute a path relative to "foo" and not "foo/bar".
+
+        // ref: "a/b/c.ts", file: "a/b/c/d.ts" -> "../c.ts"
+        if ($file->startsWith($reference)) {
+            $last = $reference->getLastSegment();
+
+            // First, file becomes "a/b/c" (pop)
+            // Then, reference becomes "a/b" (pop)
+            // Relative path is "../" (relative)
+            // Append the missing segment, path is now "../c" (concat)
+            return $file->pop()->relative($reference->pop(), '.', '..')->concat($last);
+        }
+
+        // ref: "a/b.ts", file: "a.ts" -> "a/b.ts"
+        // ref: "a/b.ts" file: "c/d.ts" -> "../a/b.ts"
+        return $file->pop()->relative($reference, '.', '..');
     }
 
     private function resolveInternalTypeAlias(GeneratorContext $context, string $name): ?string
