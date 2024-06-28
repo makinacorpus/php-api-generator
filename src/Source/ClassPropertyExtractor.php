@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace MakinaCorpus\ApiGenerator\Source;
 
+use MakinaCorpus\ApiGenerator\Attribute\GeneratedProperty;
 use MakinaCorpus\ApiGenerator\Configuration;
 use MakinaCorpus\ApiGenerator\Property;
 use MakinaCorpus\ApiGenerator\Type;
-use MakinaCorpus\ApiGenerator\Attribute\GeneratedProperty;
 
 class ClassPropertyExtractor implements PropertyExtractor
 {
@@ -19,6 +19,28 @@ class ClassPropertyExtractor implements PropertyExtractor
         }
 
         $refClass = new \ReflectionClass($type->nativeName);
+
+        // Collect virtual properties.
+        foreach ($refClass->getAttributes(GeneratedProperty::class) as $refAttr) {
+            $instance = $refAttr->newInstance();
+            \assert($instance instanceof GeneratedProperty);
+
+            if (!$instance->name) {
+                $configuration->logger->error("'{type}' has a virtual property using '{attr}' attribute with no name.", ['type' => $type->getId(), 'attr' => GeneratedProperty::class]);
+                continue;
+            }
+            if (!$instance->type) {
+                $configuration->logger->warning("'{type}.{property}' virtual property has no type", ['type' => $type->getId(), 'property' => instance->name]);
+            }
+
+            yield new Property(
+                collection: $instance->collection,
+                isSumType: false,
+                name: $instance->name,
+                nullable: $instance->nullable,
+                types: $instance->type ? \array_unique((array) $instance->type) : [],
+            );
+        }
 
         foreach ($refClass->getProperties() as $refProp) {
             \assert($refProp instanceof \ReflectionProperty);

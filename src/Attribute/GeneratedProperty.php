@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MakinaCorpus\ApiGenerator\Attribute;
 
-#[\Attribute(flags: \Attribute::TARGET_PROPERTY)]
+#[\Attribute(flags: \Attribute::TARGET_PROPERTY | \Attribute::TARGET_CLASS | \Attribute::IS_REPEATABLE)]
 class GeneratedProperty
 {
     public function __construct(
