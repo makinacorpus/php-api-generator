@@ -197,11 +197,9 @@ class GeneratorTest extends TestCase
         $generator = new Generator();
 
         $generator->generate(
-            context: new GeneratorContext(
-                configuration: new Configuration(
-                    namespaceInputPrefix: 'MakinaCorpus\\ApiGenerator',
-                    namespaceOutputPrefix: null,
-                ),
+            context: new Configuration(
+                namespaceInputPrefix: 'MakinaCorpus\\ApiGenerator',
+                namespaceOutputPrefix: null,
             ),
             directory: __DIR__ . '/test',
             source: $source,

@@ -280,7 +280,6 @@ namespace MakinaCorpus\ApiGenerator\Command;
 use App\Entity;
 use MakinaCorpus\ApiGenerator\Configuration;
 use MakinaCorpus\ApiGenerator\Generator;
-use MakinaCorpus\ApiGenerator\GeneratorContext;
 use MakinaCorpus\ApiGenerator\Output\Language\TypeScriptLanguage;
 use MakinaCorpus\ApiGenerator\Source\ArraySource;
 
@@ -296,11 +295,9 @@ $source = new ArraySource([
 $generator = new Generator();
 
 $generator->generate(
-    context: new GeneratorContext(
-        configuration: new Configuration(
-            namespaceInputPrefix: 'App\\Entity',
-            namespaceOutputPrefix: 'interfaces/api',
-        ),
+    context: new Configuration(
+        namespaceInputPrefix: 'App\\Entity',
+        namespaceOutputPrefix: 'interfaces/api',
     ),
     directory: $directory,
     source: $source,

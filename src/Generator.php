@@ -17,13 +17,20 @@ class Generator
         Source $source,
         Language $language,
         string $directory,
-        ?GeneratorContext $context = null,
+        null|GeneratorContext|Configuration $context = null,
     ) {
         if (!\is_dir($directory)) {
             throw new \InvalidArgumentException(\sprintf("Directory does not exist: '%s'", $directory));
         }
 
-        $context ??= new GeneratorContext();
+        if ($context instanceof GeneratorContext) {
+            // Nothing to do.
+        } else if ($context instanceof Configuration) {
+            $context = new GeneratorContext($context);
+        } else {
+            $context = new GeneratorContext();
+        }
+
         $language->prepareContext($context);
 
         // Filter classes and keep only those we can generate.
