@@ -135,6 +135,7 @@ class Generator
             return null;
         }
 
+        $context->configuration->logger->info(\sprintf("Adding type: '%s' as '%s/%s'", $output->getNativeType(), $output->namespace, $output->name));
         $context->addType($output);
 
         if ($input->parent) {
@@ -184,7 +185,12 @@ class Generator
         $alias = $context->getTypeAlias($nativeType);
 
         if ($alias) {
+            $context->configuration->logger->debug(\sprintf("Property with type: '%s' is aliased as '%s'", $nativeType, $alias));
+
             $output = $this->resolveTypeFromSource($source, $language, $context, $alias);
+            if ($output) {
+                $context->configuration->logger->debug(\sprintf("Alias: '%s' is resolved as '%s/%s'", $alias, $output->namespace, $output->name));
+            }
 
             return $output?->getId() ?? $alias;
         }
