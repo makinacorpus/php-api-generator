@@ -30,7 +30,7 @@ class ClassPropertyExtractor implements PropertyExtractor
                 continue;
             }
             if (!$instance->type) {
-                $configuration->logger->warning("'{type}.{property}' virtual property has no type", ['type' => $type->getId(), 'property' => instance->name]);
+                $configuration->logger->warning("'{type}.{property}' virtual property has no type", ['type' => $type->getId(), 'property' => $instance->name]);
             }
 
             yield new Property(
